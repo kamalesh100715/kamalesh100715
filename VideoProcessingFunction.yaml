@@ -1,0 +1,129 @@
+# This AWS SAM template has been generated from your function's configuration. If
+# your function has one or more triggers, note that the AWS resources associated
+# with these triggers aren't fully specified in this template and include
+# placeholder values. Open this template in AWS Application Composer or your
+# favorite IDE and modify it to specify a serverless application with other AWS
+# resources.
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: An AWS Serverless Application Model template describing your function.
+Resources:
+  VideoProcessingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      EphemeralStorage:
+        Size: 512
+      Environment:
+        Variables:
+          MEDIACONVERT_ENDPOINT: https://590184066767.mediaconvert.eu-north-1.amazonaws.com
+          MEDIACONVERT_ROLE: arn:aws:iam::590184066767:role/mediaconvertrole
+          OUTPUT_BUCKET: output2bucket
+      EventInvokeConfig:
+        MaximumEventAgeInSeconds: 21600
+        MaximumRetryAttempts: 2
+        DestinationConfig: {}
+      PackageType: Zip
+      Policies:
+        - Statement:
+            - Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: '*'
+              Effect: Allow
+              Sid: Logging
+            - Action:
+                - iam:PassRole
+              Resource:
+                - arn:aws:iam::123456789012:role/vod-MediaConvertRole
+              Effect: Allow
+              Sid: PassRole
+            - Action:
+                - mediaconvert:*
+              Resource:
+                - '*'
+              Effect: Allow
+              Sid: MediaConvertService
+            - Effect: Allow
+              Action:
+                - mediaconvert:*
+                - s3:ListAllMyBuckets
+                - s3:ListBucket
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - iam:PassRole
+              Resource: '*'
+              Condition:
+                StringLike:
+                  iam:PassedToService:
+                    - mediaconvert.amazonaws.com
+            - Effect: Allow
+              Action:
+                - s3:*
+                - s3-object-lambda:*
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - lambda:InvokeFunction
+              Resource: >-
+                arn:aws:lambda:eu-north-1:590184066767:function:VideoProcessingFunction*
+            - Effect: Allow
+              Action:
+                - lambda:InvokeFunction
+              Resource: arn:aws:lambda:eu-north-1:590184066767:function:lambdaconvert*
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+              Resource: arn:aws:logs:eu-north-1:590184066767:*
+            - Effect: Allow
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource:
+                - >-
+                  arn:aws:logs:eu-north-1:590184066767:log-group:/aws/lambda/VideoProcessingFunction:*
+      SnapStart:
+        ApplyOn: None
+      Events:
+        BucketEvent1:
+          Type: S3
+          Properties:
+            Bucket:
+              Ref: Bucket1
+            Events:
+              - s3:ObjectCreated:*
+      RuntimeManagementConfig:
+        UpdateRuntimeOn: Auto
+  Bucket1:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+  BucketPolicy1:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: Bucket1
+      PolicyDocument:
+        Statement:
+          - Action: s3:*
+            Effect: Deny
+            Principal: '*'
+            Resource:
+              - arn:aws:s3:::Bucket1/*
+              - arn:aws:s3:::Bucket1
+            Condition:
+              Bool:
+                aws:SecureTransport: false
